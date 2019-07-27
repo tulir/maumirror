@@ -88,7 +88,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 
-	rawEvt, err := hook.Parse(r, github.PushEvent)
+	rawEvt, err := hook.Parse(r, github.PushEvent, github.PingEvent)
 	if err != nil {
 		respondErr(w, r, err)
 		return
