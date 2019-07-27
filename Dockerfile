@@ -13,9 +13,11 @@ FROM alpine:latest
 
 RUN apk add --no-cache ca-certificates
 
-COPY --from=builder /usr/bin/maumirror
+COPY --from=builder /usr/bin/maumirror /usr/bin/maumirror
 
 VOLUME /data
+VOLUME /config
+EXPOSE 29321
 USER 1337:1337
 
-CMD ["/usr/bin/maumirror"]
+CMD ["/usr/bin/maumirror", "-c", "/config/config.json"]

@@ -1,0 +1,11 @@
+{
+    "datadir": "./data",
+    "path": "/webhook",
+    "address": ":29321",
+    "repositories": {
+    	"githubtraining/hellogitworld": {
+    		"secret": "foobar",
+    		"target": "git@gitlab.com:gitlabtraining/hellogitworld.git"
+    	}
+    }
+}
