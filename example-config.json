@@ -1,8 +1,11 @@
 {
-    "trust_forward_headers": true,
     "datadir": "./data",
-    "endpoint": "/webhook",
-    "address": ":29321",
+    "server": {
+        "admin_endpoint": "/admin",
+        "webhook_endpoint": "/webhook",
+        "trust_forward_headers": true,
+        "address": ":29321"
+    },
     "shell": {
         "command": "/bin/bash",
         "args": ["/dev/stdin"]

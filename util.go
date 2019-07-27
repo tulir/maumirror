@@ -60,7 +60,7 @@ func checkSig(r *http.Request, repoName string) (repo *Repository, err error) {
 
 func readUserIP(r *http.Request) string {
 	var ip string
-	if config.TrustForwardHeaders {
+	if config.Server.TrustForwardHeaders {
 		ip = r.Header.Get("X-Forwarded-For")
 	}
 	if ip == "" {

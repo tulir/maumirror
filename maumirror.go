@@ -58,8 +58,8 @@ func main() {
 		repo.Log = log.Sub(name)
 	}
 
-	http.HandleFunc(config.ListenPath, handleWebhook)
-	if err := http.ListenAndServe(config.ListenAddress, nil); err != nil {
+	http.HandleFunc(config.Server.WebhookEndpoint, handleWebhook)
+	if err := http.ListenAndServe(config.Server.Address, nil); err != nil {
 		log.Fatalln("Fatal error in HTTP server")
 		panic(err)
 	}

@@ -23,15 +23,21 @@ import (
 )
 
 type Config struct {
-	// Whether or not to trust X-Forwarded-For headers for logging.
-	TrustForwardHeaders bool `json:"trust_forward_headers"`
-
 	// Cloned repo storage directory.
 	DataDir string `json:"datadir"`
 
 	// HTTP server configuration.
-	ListenPath    string `json:"endpoint"`
-	ListenAddress string `json:"address"`
+	Server struct {
+		// Endpoint for admin API (e.g. dynamically adding webhooks).
+		AdminEndpoint string `json:"admin_endpoint"`
+		// Endpoint for receiving webhooks.
+		WebhookEndpoint string `json:"webhook_endpoint"`
+
+		// Whether or not to trust X-Forwarded-For headers for logging.
+		TrustForwardHeaders bool `json:"trust_forward_headers"`
+		// IP and port where the server listens
+		Address string `json:"address"`
+	} `json:"server"`
 
 	// Shell configuration
 	Shell struct {
