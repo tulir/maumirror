@@ -17,6 +17,7 @@
 package main
 
 import (
+	"bufio"
 	"net/http"
 	"os/exec"
 
@@ -25,6 +26,7 @@ import (
 
 const pushScript = `#!/bin/bash
 if [[ ! -d $MM_REPOSITORY_OWNER ]]; then
+	echo "Creating $(pwd)/$MM_REPOSITORY_OWNER"
 	mkdir $MM_REPOSITORY_OWNER
 fi
 cd $MM_REPOSITORY_OWNER
@@ -38,11 +40,13 @@ if [[ ! -z "$MM_SOURCE_URL_OVERRIDE" ]]; then
 	SOURCE_URL="$MM_SOURCE_URL_OVERRIDE"
 fi
 if [[ ! -d $MM_REPOSITORY_NAME.git ]]; then
+	echo "Cloning $SOURCE_URL to $MM_REPOSITORY_NAME.git"
 	git clone --mirror $SOURCE_URL $MM_REPOSITORY_NAME.git
 	cd $MM_REPOSITORY_NAME.git
 	git remote set-url --push origin $MM_TARGET_URL
 else
 	cd $MM_REPOSITORY_NAME.git
+	echo "Fetching $(git remote get-url origin)"
 	git fetch -p origin
 fi
 if [[ ! -z "$MM_TARGET_KEY_PATH" ]]; then
@@ -50,11 +54,13 @@ if [[ ! -z "$MM_TARGET_KEY_PATH" ]]; then
 else
 	unset GIT_SSH_COMMAND
 fi
-git push -c  --mirror
+echo "Pushing to $(git remote get-url --push origin)"
+git push --mirror
+echo "Mirroring complete"
 exit 0
 `
 
-func handlePushEvent(repo Repository, evt github.PushPayload) int {
+func handlePushEvent(repo *Repository, evt github.PushPayload) int {
 	lock.Lock(evt.Repository.FullName)
 	defer lock.Unlock(evt.Repository.FullName)
 
@@ -70,15 +76,30 @@ func handlePushEvent(repo Repository, evt github.PushPayload) int {
 		"MM_TARGET_KEY_PATH="+repo.PushKey)
 	cmd.Dir = config.DataDir
 
-	if pipe, err := cmd.StdinPipe(); err != nil {
-		printErr("Failed to open stdin pipe for subprocess:", err)
+	if stdout, err := cmd.StdoutPipe(); err != nil {
+		repo.Log.Errorln("Failed to open stdout pipe for subprocess:", err)
+	} else if stdin, err := cmd.StdinPipe(); err != nil {
+		repo.Log.Errorln("Failed to open stdin pipe for subprocess:", err)
 		return http.StatusInternalServerError
-	} else if _, err := pipe.Write([]byte(pushScript)); err != nil {
-		printErr("Failed to write script to stdin of subprocess:", err)
+	} else if _, err := stdin.Write([]byte(pushScript)); err != nil {
+		repo.Log.Errorln("Failed to write script to stdin of subprocess:", err)
 		return http.StatusInternalServerError
-	} else if err := cmd.Run(); err != nil {
-		printErr("Failed to run command:", err)
+	} else if err := cmd.Start(); err != nil {
+		repo.Log.Errorln("Failed to start command:", err)
 		return http.StatusInternalServerError
+	} else {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			repo.Log.Infoln(scanner.Text())
+		}
+		if err := scanner.Err(); err != nil {
+			repo.Log.Errorln("Error reading stdout:", err)
+			_ = cmd.Wait()
+			return http.StatusInternalServerError
+		} else if err := cmd.Wait(); err != nil {
+			repo.Log.Errorln("Error waiting for command:", err)
+			return http.StatusInternalServerError
+		}
 	}
 	return http.StatusOK
 }

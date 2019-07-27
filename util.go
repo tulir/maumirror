@@ -21,19 +21,15 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 
 	"gopkg.in/go-playground/webhooks.v5/github"
+
+	log "maunium.net/go/maulogger/v2"
 )
 
-func printErr(msg ...interface{}) {
-	_, _ = fmt.Fprintln(os.Stderr, msg...)
-}
-
-func checkSig(r *http.Request, repoName string) (repo Repository, err error) {
+func checkSig(r *http.Request, repoName string) (repo *Repository, err error) {
 	signature := r.Header.Get("X-Hub-Signature")
 	if len(signature) == 0 {
 		err = github.ErrMissingHubSignatureHeader
@@ -62,7 +58,7 @@ func checkSig(r *http.Request, repoName string) (repo Repository, err error) {
 }
 
 func respondErr(w http.ResponseWriter, err error) {
-	printErr("Failed to handle request:", err.Error())
+	log.Errorln("Failed to handle request:", err.Error())
 	_, _ = w.Write([]byte(err.Error()))
 	w.WriteHeader(http.StatusBadRequest)
 }

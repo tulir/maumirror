@@ -25,7 +25,9 @@ import (
 	"sync"
 
 	"gopkg.in/go-playground/webhooks.v5/github"
+
 	"maunium.net/go/mauflag"
+	log "maunium.net/go/maulogger/v2"
 )
 
 var config Config
@@ -43,16 +45,21 @@ func main() {
 		mauflag.PrintHelp()
 		os.Exit(0)
 	} else if configData, err := ioutil.ReadFile(*configPath); err != nil {
-		printErr("Failed to read config:", err)
+		log.Fatalln("Failed to read config:", err)
 		os.Exit(10)
 	} else if err := json.Unmarshal(configData, &config); err != nil {
-		printErr("Failed to parse config:", err)
+		log.Fatalln("Failed to parse config:", err)
 		os.Exit(11)
+	}
+
+	for name, repo := range config.Repositories {
+		repo.Name = name
+		repo.Log = log.Sub(name)
 	}
 
 	http.HandleFunc(config.ListenPath, handleWebhook)
 	if err := http.ListenAndServe(config.ListenAddress, nil); err != nil {
-		printErr("Fatal error in HTTP server")
+		log.Fatalln("Fatal error in HTTP server")
 		panic(err)
 	}
 }
@@ -61,7 +68,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		err := recover()
 		if err != nil {
-			printErr("Event handler panicked:", err)
+			log.Errorln("Event handler panicked:", err)
 			debug.PrintStack()
 			w.WriteHeader(http.StatusInternalServerError)
 		}

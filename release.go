@@ -22,7 +22,7 @@ import (
 	"gopkg.in/go-playground/webhooks.v5/github"
 )
 
-func handleReleaseEvent(repo Repository, evt github.ReleasePayload) int {
+func handleReleaseEvent(repo *Repository, evt github.ReleasePayload) int {
 	//lock.Lock(evt.Repository.FullName)
 	//defer lock.Unlock(evt.Repository.FullName)
 	return http.StatusNotImplemented

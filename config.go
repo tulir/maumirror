@@ -16,13 +16,15 @@
 
 package main
 
+import "maunium.net/go/maulogger/v2"
+
 type Config struct {
 	DataDir string `json:"datadir"`
 
 	ListenPath    string `json:"endpoint"`
 	ListenAddress string `json:"address"`
 
-	Repositories map[string]Repository `json:"repositories"`
+	Repositories map[string]*Repository `json:"repositories"`
 }
 
 type Repository struct {
@@ -31,4 +33,7 @@ type Repository struct {
 	Target  string `json:"target"`
 	PushKey string `json:"push_key"`
 	PullKey string `json:"pull_key"`
+
+	Name string `json:"-"`
+	Log maulogger.Logger `json:"-"`
 }
