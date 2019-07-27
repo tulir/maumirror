@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-RUN apk add --no-cache ca-certificates bash
+RUN apk add --no-cache ca-certificates git bash
 
 COPY ./maumirror /usr/bin/maumirror
 
