@@ -68,7 +68,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		err := recover()
 		if err != nil {
-			log.Errorln("Event handler panicked:", err)
+			log.Errorln("Handling request from", readUserIP(r), "panicked:", err)
 			debug.PrintStack()
 			w.WriteHeader(http.StatusInternalServerError)
 		}
@@ -76,26 +76,26 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	rawEvt, err := hook.Parse(r, github.PushEvent)
 	if err != nil {
-		respondErr(w, err)
+		respondErr(w, r, err)
 		return
 	}
 
 	switch evt := rawEvt.(type) {
 	case github.PingPayload:
 		if repo, err := checkSig(r, evt.Repository.FullName); err != nil {
-			respondErr(w, err)
+			respondErr(w, r, err)
 		} else {
-			repo.Log.Infoln("Received webhook ping from GitHub")
+			repo.Log.Infoln("Received webhook ping from", readUserIP(r))
 		}
 	case github.PushPayload:
 		if repo, err := checkSig(r, evt.Repository.FullName); err != nil {
-			respondErr(w, err)
+			respondErr(w, r, err)
 		} else {
 			w.WriteHeader(handlePushEvent(repo, evt))
 		}
 	case github.ReleasePayload:
 		if repo, err := checkSig(r, evt.Repository.FullName); err != nil {
-			respondErr(w, err)
+			respondErr(w, r, err)
 		} else {
 			w.WriteHeader(handleReleaseEvent(repo, evt))
 		}

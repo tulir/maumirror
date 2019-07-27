@@ -57,8 +57,20 @@ func checkSig(r *http.Request, repoName string) (repo *Repository, err error) {
 	return
 }
 
-func respondErr(w http.ResponseWriter, err error) {
-	log.Errorln("Failed to handle request:", err.Error())
+
+func readUserIP(r *http.Request) string {
+	var ip string
+	if config.TrustForwardHeaders {
+		ip = r.Header.Get("X-Forwarded-For")
+	}
+	if ip == "" {
+		ip = r.RemoteAddr
+	}
+	return ip
+}
+
+func respondErr(w http.ResponseWriter, r *http.Request, err error) {
+	log.DefaultLogger.Errorfln("Failed to handle request from %s: %v", readUserIP(r), err.Error())
 	w.WriteHeader(http.StatusBadRequest)
 	_, _ = w.Write([]byte(err.Error()))
 }

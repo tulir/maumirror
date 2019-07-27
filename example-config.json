@@ -1,4 +1,5 @@
 {
+    "trust_forward_headers": true,
     "datadir": "./data",
     "endpoint": "/webhook",
     "address": ":29321",

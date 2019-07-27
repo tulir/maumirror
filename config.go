@@ -19,6 +19,8 @@ package main
 import "maunium.net/go/maulogger/v2"
 
 type Config struct {
+	TrustForwardHeaders bool `json:"trust_forward_headers"`
+
 	DataDir string `json:"datadir"`
 
 	ListenPath    string `json:"endpoint"`
