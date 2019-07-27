@@ -81,6 +81,12 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch evt := rawEvt.(type) {
+	case github.PingPayload:
+		if repo, err := checkSig(r, evt.Repository.FullName); err != nil {
+			respondErr(w, err)
+		} else {
+			repo.Log.Infoln("Received webhook ping from GitHub")
+		}
 	case github.PushPayload:
 		if repo, err := checkSig(r, evt.Repository.FullName); err != nil {
 			respondErr(w, err)

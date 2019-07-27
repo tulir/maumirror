@@ -34,6 +34,6 @@ type Repository struct {
 	PushKey string `json:"push_key"`
 	PullKey string `json:"pull_key"`
 
-	Name string `json:"-"`
-	Log maulogger.Logger `json:"-"`
+	Name string           `json:"-"`
+	Log  maulogger.Logger `json:"-"`
 }
