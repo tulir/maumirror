@@ -4,3 +4,5 @@ maunium.net/go/mauflag v1.0.0 h1:YiaRc0tEI3toYtJMRIfjP+jklH45uDHtT80nUamyD4M=
 maunium.net/go/mauflag v1.0.0/go.mod h1:nLivPOpTpHnpzEh8jEdSL9UqO9+/KBJFmNRlwKfkPeA=
 maunium.net/go/maulogger/v2 v2.0.0 h1:8PB95zf6e7Ddw8iOWqjrJjAjPcAI50LagA1X0Ur64os=
 maunium.net/go/maulogger/v2 v2.0.0/go.mod h1:Hbbkq3NV6jvJodByZu1mgEF3fpT7Kz9z0MjEZ3/BusI=
+maunium.net/go/maulogger/v2 v2.1.0 h1:2zGq8+8wPeDXzfSDCjaON5FcplSY3U0qEPFcwmGRtiI=
+maunium.net/go/maulogger/v2 v2.1.0/go.mod h1:TYWy7wKwz/tIXTpsx8G3mZseIRiC5DoMxSZazOHy68A=

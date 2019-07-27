@@ -70,7 +70,7 @@ func readUserIP(r *http.Request) string {
 }
 
 func respondErr(w http.ResponseWriter, r *http.Request, err error) {
-	log.DefaultLogger.Errorfln("Failed to handle request from %s: %v", readUserIP(r), err.Error())
+	log.Errorfln("Failed to handle request from %s: %v", readUserIP(r), err.Error())
 	w.WriteHeader(http.StatusBadRequest)
 	_, _ = w.Write([]byte(err.Error()))
 }
