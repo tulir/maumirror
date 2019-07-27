@@ -79,10 +79,16 @@ func handlePushEvent(repo *Repository, evt github.PushPayload) int {
 	cmd.Stderr = repo.Log.WithDefaultLevel(log.LevelError)
 	cmd.Stdout = repo.Log.WithDefaultLevel(log.LevelInfo)
 
+	script := pushScript
+	if len(config.Shell.Scripts.Push.Data) > 0 {
+		repo.Log.Debugln("Using push handler script from", config.Shell.Scripts.Push.Path)
+		script = config.Shell.Scripts.Push.Data
+	}
+
 	if stdin, err := cmd.StdinPipe(); err != nil {
 		repo.Log.Errorln("Failed to open stdin pipe for subprocess:", err)
 		return http.StatusInternalServerError
-	} else if _, err := stdin.Write([]byte(pushScript)); err != nil {
+	} else if _, err := stdin.Write([]byte(script)); err != nil {
 		repo.Log.Errorln("Failed to write script to stdin of subprocess:", err)
 		return http.StatusInternalServerError
 	} else if err := cmd.Start(); err != nil {

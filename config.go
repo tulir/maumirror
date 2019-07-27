@@ -57,20 +57,24 @@ type Script struct {
 func (script *Script) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &script.Path); err != nil {
 		return err
-	} else if fileData, err := ioutil.ReadFile(script.Path); err != nil {
-		return err
-	} else {
-		script.Data = string(fileData)
-		return nil
 	}
+	if len(script.Path) > 0 {
+		if fileData, err := ioutil.ReadFile(script.Path); err != nil {
+			return err
+		} else {
+			script.Data = string(fileData)
+		}
+	}
+	return nil
 }
 
 func (script *Script) MarshalJSON() ([]byte, error) {
-	if err := ioutil.WriteFile(script.Path, []byte(script.Data), 0644); err != nil {
-		return nil, err
-	} else {
-		return json.Marshal(script.Path)
+	if len(script.Path) > 0 {
+		if err := ioutil.WriteFile(script.Path, []byte(script.Data), 0644); err != nil {
+			return nil, err
+		}
 	}
+	return json.Marshal(script.Path)
 }
 
 type Repository struct {
