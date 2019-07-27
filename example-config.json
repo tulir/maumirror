@@ -1,6 +1,6 @@
 {
     "datadir": "./data",
-    "path": "/webhook",
+    "endpoint": "/webhook",
     "address": ":29321",
     "repositories": {
     	"githubtraining/hellogitworld": {

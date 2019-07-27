@@ -19,7 +19,7 @@ package main
 type Config struct {
 	DataDir string `json:"datadir"`
 
-	ListenPath    string `json:"path"`
+	ListenPath    string `json:"endpoint"`
 	ListenAddress string `json:"address"`
 
 	Repositories map[string]Repository `json:"repositories"`
