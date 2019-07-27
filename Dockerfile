@@ -11,7 +11,7 @@ RUN go build -o /usr/bin/maumirror
 
 FROM alpine:latest
 
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates bash
 
 COPY --from=builder /usr/bin/maumirror /usr/bin/maumirror
 
