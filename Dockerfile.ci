@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-RUN apk add --no-cache ca-certificates git bash
+RUN apk add --no-cache ca-certificates git openssh-client bash
 
 COPY ./maumirror /usr/bin/maumirror
 

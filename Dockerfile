@@ -11,7 +11,7 @@ RUN go build -o /usr/bin/maumirror
 
 FROM alpine:latest
 
-RUN apk add --no-cache ca-certificates git bash
+RUN apk add --no-cache ca-certificates git openssh-client bash
 
 COPY --from=builder /usr/bin/maumirror /usr/bin/maumirror
 
