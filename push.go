@@ -28,15 +28,30 @@ if [[ ! -d $MM_REPOSITORY_OWNER ]]; then
 	mkdir $MM_REPOSITORY_OWNER
 fi
 cd $MM_REPOSITORY_OWNER
+if [[ ! -z "$MM_SOURCE_KEY_PATH" ]]; then
+	export GIT_SSH_COMMAND="ssh -i $MM_SOURCE_KEY_PATH"
+	SOURCE_URL="git@github.com:$MM_REPOSITORY_OWNER/$MM_REPOSITORY_NAME.git"
+else
+	SOURCE_URL="https://github.com/$MM_REPOSITORY_OWNER/$MM_REPOSITORY_NAME.git"
+fi
+if [[ ! -z "$MM_SOURCE_URL_OVERRIDE" ]]; then
+	SOURCE_URL="$MM_SOURCE_URL_OVERRIDE"
+fi
 if [[ ! -d $MM_REPOSITORY_NAME.git ]]; then
-	git clone --mirror $MM_SOURCE_URL $MM_REPOSITORY_NAME.git
+	git clone --mirror $SOURCE_URL $MM_REPOSITORY_NAME.git
 	cd $MM_REPOSITORY_NAME.git
 	git remote set-url --push origin $MM_TARGET_URL
 else
 	cd $MM_REPOSITORY_NAME.git
 	git fetch -p origin
 fi
-git push --mirror
+if [[ ! -z "$MM_TARGET_KEY_PATH" ]]; then
+	export GIT_SSH_COMMAND="ssh -i $MM_TARGET_KEY_PATH"
+else
+	unset GIT_SSH_COMMAND
+fi
+git push -c  --mirror
+exit 0
 `
 
 func handlePushEvent(repo Repository, evt github.PushPayload) int {
@@ -44,10 +59,15 @@ func handlePushEvent(repo Repository, evt github.PushPayload) int {
 	defer lock.Unlock(evt.Repository.FullName)
 
 	cmd := exec.Command("/bin/bash", "/dev/stdin")
-	cmd.Env = append(cmd.Env, "MM_SOURCE_URL="+evt.Repository.GitURL,
-		"MM_TARGET_URL="+repo.Target,
+	cmd.Env = append(cmd.Env,
+		"MM_SOURCE_URL="+evt.Repository.GitURL,
 		"MM_REPOSITORY_NAME="+evt.Repository.Name,
-		"MM_REPOSITORY_OWNER="+evt.Repository.Owner.Login)
+		"MM_REPOSITORY_OWNER="+evt.Repository.Owner.Login,
+		"MM_SOURCE_URL_OVERRIDE="+repo.Source,
+
+		"MM_SOURCE_KEY_PATH="+repo.PullKey,
+		"MM_TARGET_URL="+repo.Target,
+		"MM_TARGET_KEY_PATH="+repo.PushKey)
 	cmd.Dir = config.DataDir
 
 	if pipe, err := cmd.StdinPipe(); err != nil {

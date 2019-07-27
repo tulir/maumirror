@@ -3,9 +3,10 @@
     "endpoint": "/webhook",
     "address": ":29321",
     "repositories": {
-    	"githubtraining/hellogitworld": {
-    		"secret": "foobar",
-    		"target": "git@gitlab.com:gitlabtraining/hellogitworld.git"
-    	}
+        "githubtraining/hellogitworld": {
+            "secret": "foobar",
+            "target": "git@gitlab.com:gitlabtraining/hellogitworld.git",
+            "push_key": "~/.ssh/gitlab_rsa"
+        }
     }
 }

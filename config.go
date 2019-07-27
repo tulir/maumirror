@@ -26,7 +26,9 @@ type Config struct {
 }
 
 type Repository struct {
-	Secret string `json:"secret"`
-
-	Target string `json:"target"`
+	Source  string `json:"source"`
+	Secret  string `json:"secret"`
+	Target  string `json:"target"`
+	PushKey string `json:"push_key"`
+	PullKey string `json:"pull_key"`
 }
