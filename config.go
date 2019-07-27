@@ -16,7 +16,11 @@
 
 package main
 
-import "maunium.net/go/maulogger/v2"
+import (
+	"encoding/json"
+	"io/ioutil"
+	"maunium.net/go/maulogger/v2"
+)
 
 type Config struct {
 	// Whether or not to trust X-Forwarded-For headers for logging.
@@ -36,13 +40,37 @@ type Config struct {
 		// The arguments to pass to shells. The script is sent through stdin.
 		Args []string `json:"args"`
 		// Paths to scripts. If unset, will default to built-in handlers.
-		/*Scripts struct {
-			Push string `json:"push"`
-		} `json:"scripts"`*/
+		Scripts struct {
+			Push Script `json:"push"`
+		} `json:"scripts"`
 	} `json:"shell"`
 
 	// Repository configuration
 	Repositories map[string]*Repository `json:"repositories"`
+}
+
+type Script struct {
+	Path string
+	Data string
+}
+
+func (script *Script) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, &script.Path); err != nil {
+		return err
+	} else if fileData, err := ioutil.ReadFile(script.Path); err != nil {
+		return err
+	} else {
+		script.Data = string(fileData)
+		return nil
+	}
+}
+
+func (script *Script) MarshalJSON() ([]byte, error) {
+	if err := ioutil.WriteFile(script.Path, []byte(script.Data), 0644); err != nil {
+		return nil, err
+	} else {
+		return json.Marshal(script.Path)
+	}
 }
 
 type Repository struct {
