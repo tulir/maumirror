@@ -40,7 +40,7 @@ if [[ ! -z "$MM_SOURCE_URL_OVERRIDE" ]]; then
 	SOURCE_URL="$MM_SOURCE_URL_OVERRIDE"
 fi
 if [[ ! -d $MM_REPOSITORY_NAME.git ]]; then
-	echo "Cloning $SOURCE_URL to $MM_REPOSITORY_NAME.git"
+	echo "Cloning $SOURCE_URL to $(pwd)/$MM_REPOSITORY_NAME.git"
 	git clone --mirror $SOURCE_URL $MM_REPOSITORY_NAME.git
 	cd $MM_REPOSITORY_NAME.git
 	git remote set-url --push origin $MM_TARGET_URL
@@ -79,6 +79,9 @@ func handlePushEvent(repo *Repository, evt github.PushPayload) int {
 	if stdout, err := cmd.StdoutPipe(); err != nil {
 		repo.Log.Errorln("Failed to open stdout pipe for subprocess:", err)
 		return http.StatusInternalServerError
+	} else if stderr, err := cmd.StderrPipe(); err != nil {
+		repo.Log.Errorln("Failed to open stderr pipe for subprocess:", err)
+		return http.StatusInternalServerError
 	} else if stdin, err := cmd.StdinPipe(); err != nil {
 		repo.Log.Errorln("Failed to open stdin pipe for subprocess:", err)
 		return http.StatusInternalServerError
@@ -89,15 +92,25 @@ func handlePushEvent(repo *Repository, evt github.PushPayload) int {
 		repo.Log.Errorln("Failed to start command:", err)
 		return http.StatusInternalServerError
 	} else {
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			repo.Log.Infoln(scanner.Text())
-		}
-		if err := scanner.Err(); err != nil {
-			repo.Log.Errorln("Error reading stdout:", err)
-			_ = cmd.Wait()
-			return http.StatusInternalServerError
-		} else if err := cmd.Wait(); err != nil {
+		go func() {
+			scanner := bufio.NewScanner(stdout)
+			for scanner.Scan() {
+				repo.Log.Infoln(scanner.Text())
+			}
+			if err := scanner.Err(); err != nil {
+				repo.Log.Errorln("Error reading stdout:", err)
+			}
+		}()
+		go func() {
+			scanner := bufio.NewScanner(stderr)
+			for scanner.Scan() {
+				repo.Log.Errorln(scanner.Text())
+			}
+			if err := scanner.Err(); err != nil {
+				repo.Log.Errorln("Error reading stderr:", err)
+			}
+		}()
+		if err := cmd.Wait(); err != nil {
 			repo.Log.Errorln("Error waiting for command:", err)
 			return http.StatusInternalServerError
 		}
