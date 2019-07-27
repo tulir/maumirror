@@ -1,0 +1,10 @@
+FROM alpine:latest
+
+RUN apk add --no-cache ca-certificates
+
+COPY ./maumirror /usr/bin/maumirror
+
+VOLUME /data
+USER 1337:1337
+
+CMD ["/usr/bin/maumirror"]
