@@ -3,6 +3,10 @@
     "datadir": "./data",
     "endpoint": "/webhook",
     "address": ":29321",
+    "shell": {
+        "command": "/bin/bash",
+        "args": ["/dev/stdin"]
+    },
     "repositories": {
         "githubtraining/hellogitworld": {
             "secret": "foobar",

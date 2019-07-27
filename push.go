@@ -64,7 +64,8 @@ func handlePushEvent(repo *Repository, evt github.PushPayload) int {
 	lock.Lock(evt.Repository.FullName)
 	defer lock.Unlock(evt.Repository.FullName)
 
-	cmd := exec.Command("/bin/bash", "/dev/stdin")
+	cmd := exec.Command(config.Shell.Command, config.Shell.Args...)
+	cmd.Dir = config.DataDir
 	cmd.Env = append(cmd.Env,
 		"MM_SOURCE_URL="+evt.Repository.GitURL,
 		"MM_REPOSITORY_NAME="+evt.Repository.Name,
@@ -74,10 +75,10 @@ func handlePushEvent(repo *Repository, evt github.PushPayload) int {
 		"MM_SOURCE_KEY_PATH="+repo.PullKey,
 		"MM_TARGET_URL="+repo.Target,
 		"MM_TARGET_KEY_PATH="+repo.PushKey)
-	cmd.Dir = config.DataDir
 
 	if stdout, err := cmd.StdoutPipe(); err != nil {
 		repo.Log.Errorln("Failed to open stdout pipe for subprocess:", err)
+		return http.StatusInternalServerError
 	} else if stdin, err := cmd.StdinPipe(); err != nil {
 		repo.Log.Errorln("Failed to open stdin pipe for subprocess:", err)
 		return http.StatusInternalServerError

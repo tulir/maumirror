@@ -19,21 +19,42 @@ package main
 import "maunium.net/go/maulogger/v2"
 
 type Config struct {
+	// Whether or not to trust X-Forwarded-For headers for logging.
 	TrustForwardHeaders bool `json:"trust_forward_headers"`
 
+	// Cloned repo storage directory.
 	DataDir string `json:"datadir"`
 
+	// HTTP server configuration.
 	ListenPath    string `json:"endpoint"`
 	ListenAddress string `json:"address"`
 
+	// Shell configuration
+	Shell struct {
+		// The command to start shells with
+		Command string `json:"command"`
+		// The arguments to pass to shells. The script is sent through stdin.
+		Args []string `json:"args"`
+		// Paths to scripts. If unset, will default to built-in handlers.
+		/*Scripts struct {
+			Push string `json:"push"`
+		} `json:"scripts"`*/
+	} `json:"shell"`
+
+	// Repository configuration
 	Repositories map[string]*Repository `json:"repositories"`
 }
 
 type Repository struct {
-	Source  string `json:"source"`
-	Secret  string `json:"secret"`
-	Target  string `json:"target"`
+	// Repository source URL.
+	Source string `json:"source"`
+	// Webhook auth secret. Request auth is not checked if secret is not configured.
+	Secret string `json:"secret"`
+	// Target repo URL. Required.
+	Target string `json:"target"`
+	// Path to SSH key for pushing repo.
 	PushKey string `json:"push_key"`
+	// Path to SSH key for pulling repo. If set, source repo URL defaults to ssh instead of https.
 	PullKey string `json:"pull_key"`
 
 	Name string           `json:"-"`
