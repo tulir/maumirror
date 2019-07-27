@@ -17,11 +17,12 @@
 package main
 
 import (
-	"bufio"
 	"net/http"
 	"os/exec"
 
 	"gopkg.in/go-playground/webhooks.v5/github"
+
+	log "maunium.net/go/maulogger/v2"
 )
 
 const pushScript = `#!/bin/bash
@@ -75,14 +76,10 @@ func handlePushEvent(repo *Repository, evt github.PushPayload) int {
 		"MM_SOURCE_KEY_PATH="+repo.PullKey,
 		"MM_TARGET_URL="+repo.Target,
 		"MM_TARGET_KEY_PATH="+repo.PushKey)
+	cmd.Stderr = repo.Log.WithDefaultLevel(log.LevelError)
+	cmd.Stdout = repo.Log.WithDefaultLevel(log.LevelInfo)
 
-	if stdout, err := cmd.StdoutPipe(); err != nil {
-		repo.Log.Errorln("Failed to open stdout pipe for subprocess:", err)
-		return http.StatusInternalServerError
-	} else if stderr, err := cmd.StderrPipe(); err != nil {
-		repo.Log.Errorln("Failed to open stderr pipe for subprocess:", err)
-		return http.StatusInternalServerError
-	} else if stdin, err := cmd.StdinPipe(); err != nil {
+	if stdin, err := cmd.StdinPipe(); err != nil {
 		repo.Log.Errorln("Failed to open stdin pipe for subprocess:", err)
 		return http.StatusInternalServerError
 	} else if _, err := stdin.Write([]byte(pushScript)); err != nil {
@@ -92,24 +89,6 @@ func handlePushEvent(repo *Repository, evt github.PushPayload) int {
 		repo.Log.Errorln("Failed to start command:", err)
 		return http.StatusInternalServerError
 	} else {
-		go func() {
-			scanner := bufio.NewScanner(stdout)
-			for scanner.Scan() {
-				repo.Log.Infoln(scanner.Text())
-			}
-			if err := scanner.Err(); err != nil {
-				repo.Log.Errorln("Error reading stdout:", err)
-			}
-		}()
-		go func() {
-			scanner := bufio.NewScanner(stderr)
-			for scanner.Scan() {
-				repo.Log.Errorln(scanner.Text())
-			}
-			if err := scanner.Err(); err != nil {
-				repo.Log.Errorln("Error reading stderr:", err)
-			}
-		}()
 		if err := cmd.Wait(); err != nil {
 			repo.Log.Errorln("Error waiting for command:", err)
 			return http.StatusInternalServerError
