@@ -59,6 +59,6 @@ func checkSig(r *http.Request, repoName string) (repo *Repository, err error) {
 
 func respondErr(w http.ResponseWriter, err error) {
 	log.Errorln("Failed to handle request:", err.Error())
-	_, _ = w.Write([]byte(err.Error()))
 	w.WriteHeader(http.StatusBadRequest)
+	_, _ = w.Write([]byte(err.Error()))
 }
