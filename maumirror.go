@@ -17,6 +17,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -74,11 +75,26 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	bodyBytes, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.DefaultLogger.Errorfln("Failed to read body in request from %s: %v", readUserIP(r), err)
+		respondErr(w, r, github.ErrParsingPayload)
+		return
+	}
+	err = r.Body.Close()
+	if err != nil {
+		log.DefaultLogger.Errorfln("Failed to close body reader in request from %s: %v", readUserIP(r), err)
+		respondErr(w, r, github.ErrParsingPayload)
+	}
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
 	rawEvt, err := hook.Parse(r, github.PushEvent)
 	if err != nil {
 		respondErr(w, r, err)
 		return
 	}
+
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	switch evt := rawEvt.(type) {
 	case github.PingPayload:
