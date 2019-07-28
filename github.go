@@ -46,7 +46,7 @@ func NewCreateWebhookPayload(secret string) CreateWebhookPayload {
 		secret = RandString(50)
 	}
 	return CreateWebhookPayload{
-		Name:   "maumirror",
+		Name:   "web",
 		Active: true,
 		Events: []string{"push"},
 		Config: CreateWebhookConfig{
