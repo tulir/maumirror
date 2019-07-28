@@ -1,0 +1,38 @@
+# Cloned repo storage directory.
+datadir: ./data
+
+# HTTP server configuration.
+server:
+    # Endpoint for admin API (e.g. dynamically adding webhooks).
+    admin_endpoint: /admin
+    # Endpoint for receiving webhooks.
+    webhook_endpoint: /webhook
+    # Whether or not to trust X-Forwarded-For headers for logging.
+    trust_forward_headers: true
+    # IP and port where the server listens
+    address: :29321
+
+# Shell configuration
+shell:
+    # The command to start shells with
+    command: /bin/bash
+    # The arguments to pass to shells. The script is sent through stdin
+    args:
+    - /dev/stdin
+    # Paths to scripts. If unset, will default to built-in handlers.
+    #scripts:
+    #    push: ./scripts/push.sh
+
+# Repository configuration
+repositories:
+    githubtraining/hellogitworld:
+        # Repository source URL. Optional, defaults to https.
+        #source: https://github.com/githubtraining/hellogitworld.git
+        # Webhook auth secret. Request signature is not checked if secret is not configured.
+        secret: foobar
+        # Target repo URL. Required
+        target: git@gitlab.com:gitlabtraining/hellogitworld.git
+        # Path to SSH key for pushing to repo.
+        push_key: ~/.ssh/gitlab_ed25519
+        # Path to SSH key for pulling from repo. If set, source repo URL defaults to ssh instead of https.
+        #pull_key: ~/.ssh/github_ed25519

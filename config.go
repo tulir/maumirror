@@ -17,42 +17,41 @@
 package main
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"maunium.net/go/maulogger/v2"
 )
 
 type Config struct {
 	// Cloned repo storage directory.
-	DataDir string `json:"datadir"`
+	DataDir string `yaml:"datadir"`
 
 	// HTTP server configuration.
 	Server struct {
 		// Endpoint for admin API (e.g. dynamically adding webhooks).
-		AdminEndpoint string `json:"admin_endpoint"`
+		AdminEndpoint string `yaml:"admin_endpoint"`
 		// Endpoint for receiving webhooks.
-		WebhookEndpoint string `json:"webhook_endpoint"`
+		WebhookEndpoint string `yaml:"webhook_endpoint"`
 
 		// Whether or not to trust X-Forwarded-For headers for logging.
-		TrustForwardHeaders bool `json:"trust_forward_headers"`
+		TrustForwardHeaders bool `yaml:"trust_forward_headers"`
 		// IP and port where the server listens
-		Address string `json:"address"`
-	} `json:"server"`
+		Address string `yaml:"address"`
+	} `yaml:"server"`
 
 	// Shell configuration
 	Shell struct {
 		// The command to start shells with
-		Command string `json:"command"`
+		Command string `yaml:"command"`
 		// The arguments to pass to shells. The script is sent through stdin.
-		Args []string `json:"args"`
+		Args []string `yaml:"args"`
 		// Paths to scripts. If unset, will default to built-in handlers.
 		Scripts struct {
-			Push Script `json:"push"`
-		} `json:"scripts"`
-	} `json:"shell"`
+			Push Script `yaml:"push"`
+		} `yaml:"scripts"`
+	} `yaml:"shell"`
 
 	// Repository configuration
-	Repositories map[string]*Repository `json:"repositories"`
+	Repositories map[string]*Repository `yaml:"repositories"`
 }
 
 type Script struct {
@@ -60,8 +59,8 @@ type Script struct {
 	Data string
 }
 
-func (script *Script) UnmarshalJSON(data []byte) error {
-	if err := json.Unmarshal(data, &script.Path); err != nil {
+func (script *Script) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if err := unmarshal(&script.Path); err != nil {
 		return err
 	}
 	if len(script.Path) > 0 {
@@ -74,27 +73,27 @@ func (script *Script) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (script *Script) MarshalJSON() ([]byte, error) {
+func (script *Script) MarshalYAML() (interface{}, error) {
 	if len(script.Path) > 0 {
 		if err := ioutil.WriteFile(script.Path, []byte(script.Data), 0644); err != nil {
 			return nil, err
 		}
 	}
-	return json.Marshal(script.Path)
+	return script.Path, nil
 }
 
 type Repository struct {
-	// Repository source URL.
-	Source string `json:"source"`
-	// Webhook auth secret. Request auth is not checked if secret is not configured.
-	Secret string `json:"secret"`
+	// Repository source URL. Optional, defaults to https.
+	Source string `yaml:"source"`
+	// Webhook auth secret. Request signature is not checked if secret is not configured.
+	Secret string `yaml:"secret"`
 	// Target repo URL. Required.
-	Target string `json:"target"`
+	Target string `yaml:"target"`
 	// Path to SSH key for pushing repo.
-	PushKey string `json:"push_key"`
+	PushKey string `yaml:"push_key"`
 	// Path to SSH key for pulling repo. If set, source repo URL defaults to ssh instead of https.
-	PullKey string `json:"pull_key"`
+	PullKey string `yaml:"pull_key"`
 
-	Name string           `json:"-"`
-	Log  maulogger.Logger `json:"-"`
+	Name string           `yaml:"-"`
+	Log  maulogger.Logger `yaml:"-"`
 }

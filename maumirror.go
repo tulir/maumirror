@@ -18,7 +18,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -26,6 +25,7 @@ import (
 	"sync"
 
 	"gopkg.in/go-playground/webhooks.v5/github"
+	"gopkg.in/yaml.v2"
 
 	"maunium.net/go/mauflag"
 	log "maunium.net/go/maulogger/v2"
@@ -36,7 +36,7 @@ var lock = NewPartitionLocker(&sync.Mutex{})
 var hook, _ = github.New()
 
 func main() {
-	var configPath = mauflag.MakeFull("c", "config", "Path to config file", "config.json").String()
+	var configPath = mauflag.MakeFull("c", "config", "Path to config file", "config.yaml").String()
 	var wantHelp, _ = mauflag.MakeHelpFlag()
 
 	if err := mauflag.Parse(); err != nil {
@@ -48,7 +48,7 @@ func main() {
 	} else if configData, err := ioutil.ReadFile(*configPath); err != nil {
 		log.Fatalln("Failed to read config:", err)
 		os.Exit(10)
-	} else if err := json.Unmarshal(configData, &config); err != nil {
+	} else if err := yaml.Unmarshal(configData, &config); err != nil {
 		log.Fatalln("Failed to parse config:", err)
 		os.Exit(11)
 	}

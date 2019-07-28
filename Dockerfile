@@ -22,4 +22,4 @@ EXPOSE 29321
 RUN adduser --disabled-password -u 29321 maumirror
 USER 29321:29321
 
-CMD ["/usr/bin/maumirror", "-c", "/config/config.json"]
+CMD ["/usr/bin/maumirror", "-c", "/config/config.yaml"]
