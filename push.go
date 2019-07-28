@@ -80,7 +80,7 @@ func handlePushEvent(repo *Repository, evt github.PushPayload) int {
 	cmd.Stdout = repo.Log.WithDefaultLevel(log.LevelInfo)
 
 	script := pushScript
-	if len(config.Shell.Scripts.Push.Data) > 0 {
+	if config.Shell.Scripts.Push != nil && len(config.Shell.Scripts.Push.Data) > 0 {
 		repo.Log.Debugln("Using push handler script from", config.Shell.Scripts.Push.Path)
 		script = config.Shell.Scripts.Push.Data
 	}
