@@ -85,7 +85,7 @@ func createMirror(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debugln("Create mirror request from %s: %v", readUserIP(r), req)
+	log.Debugln("Create mirror request from %s: %s to %s", readUserIP(r), req.Name, req.Repo.Target)
 
 	if req.GitHubToken != "" {
 		var err error
