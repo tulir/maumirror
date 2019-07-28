@@ -63,7 +63,7 @@ func main() {
 	if config.Server.AdminEndpoint != "" {
 		adminMux := http.NewServeMux()
 		adminMux.HandleFunc("/create", createMirror)
-		root.Handle(config.Server.AdminEndpoint, adminMux)
+		root.Handle(config.Server.AdminEndpoint, http.StripPrefix(config.Server.AdminEndpoint, adminMux))
 		log.Infoln("Admin listener enabled at", config.Server.AdminEndpoint)
 	}
 
