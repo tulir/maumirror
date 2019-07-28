@@ -64,8 +64,10 @@ func main() {
 		adminMux := http.NewServeMux()
 		adminMux.HandleFunc("/create", createMirror)
 		root.Handle(config.Server.AdminEndpoint, adminMux)
+		log.Infoln("Admin listener enabled at", config.Server.AdminEndpoint)
 	}
 
+	log.Infoln("Listening at", config.Server.Address)
 	if err := http.ListenAndServe(config.Server.Address, root); err != nil {
 		log.Fatalln("Fatal error in HTTP server")
 		panic(err)
