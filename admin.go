@@ -91,7 +91,7 @@ func createMirror(w http.ResponseWriter, r *http.Request) {
 
 	log.Debugln("Create mirror request from %s: %s to %s", readUserIP(r), req.Name, repo.Target)
 
-	log.Infoln("Adding", req.Name, "with push target", repo.Target, "to repos")
+	log.Infoln("Adding", repo.Name, "with push target", repo.Target, "to repos")
 	config.Repositories[req.Name] = repo
 
 	if req.GitHubToken != "" {
