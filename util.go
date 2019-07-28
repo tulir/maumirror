@@ -29,14 +29,16 @@ import (
 	log "maunium.net/go/maulogger/v2"
 )
 
-func checkSig(r *http.Request, repoName string) (repo *Repository, err error) {
+func checkSig(r *http.Request, repoName string) (repo *Repository, err error, code int) {
 	signature := r.Header.Get("X-Hub-Signature")
 	if len(signature) == 0 {
+		code = http.StatusUnauthorized
 		err = github.ErrMissingHubSignatureHeader
 		return
 	}
 	repo, ok := config.Repositories[repoName]
 	if !ok {
+		code = http.StatusNotFound
 		err = errors.New("unknown repository")
 		return
 	}
@@ -44,6 +46,7 @@ func checkSig(r *http.Request, repoName string) (repo *Repository, err error) {
 
 	payload, err := ioutil.ReadAll(r.Body)
 	if err != nil || len(payload) == 0 {
+		code = http.StatusBadRequest
 		err = github.ErrParsingPayload
 		return
 	}
@@ -52,8 +55,10 @@ func checkSig(r *http.Request, repoName string) (repo *Repository, err error) {
 	expectedMAC := hex.EncodeToString(mac.Sum(nil))
 
 	if !hmac.Equal([]byte(signature[5:]), []byte(expectedMAC)) {
+		code = http.StatusUnauthorized
 		err = github.ErrHMACVerificationFailed
 	}
+	code = http.StatusOK
 	return
 }
 
@@ -69,8 +74,8 @@ func readUserIP(r *http.Request) string {
 	return ip
 }
 
-func respondErr(w http.ResponseWriter, r *http.Request, err error) {
+func respondErr(w http.ResponseWriter, r *http.Request, err error, status int) {
 	log.Errorfln("Failed to handle request from %s: %v", readUserIP(r), err.Error())
-	w.WriteHeader(http.StatusBadRequest)
+	w.WriteHeader(status)
 	_, _ = w.Write([]byte(err.Error()))
 }

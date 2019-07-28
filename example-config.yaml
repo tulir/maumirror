@@ -7,6 +7,8 @@ server:
     admin_endpoint: /admin
     # Endpoint for receiving webhooks.
     webhook_endpoint: /webhook
+    # Public URL where the webhook endpoint is accessible. Used for installing GitHub webhooks automatically.
+    webhook_public_url: https://example.com/webhook
     # Whether or not to trust X-Forwarded-For headers for logging.
     trust_forward_headers: true
     # IP and port where the server listens

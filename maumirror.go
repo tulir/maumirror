@@ -31,14 +31,14 @@ import (
 	log "maunium.net/go/maulogger/v2"
 )
 
+var configPath = mauflag.MakeFull("c", "config", "Path to config file", "config.yaml").String()
+var wantHelp, _ = mauflag.MakeHelpFlag()
+
 var config Config
 var lock = NewPartitionLocker(&sync.Mutex{})
 var hook, _ = github.New()
 
 func main() {
-	var configPath = mauflag.MakeFull("c", "config", "Path to config file", "config.yaml").String()
-	var wantHelp, _ = mauflag.MakeHelpFlag()
-
 	if err := mauflag.Parse(); err != nil {
 		mauflag.PrintHelp()
 		os.Exit(1)
@@ -58,10 +58,26 @@ func main() {
 		repo.Log = log.Sub(name)
 	}
 
-	http.HandleFunc(config.Server.WebhookEndpoint, handleWebhook)
-	if err := http.ListenAndServe(config.Server.Address, nil); err != nil {
+	root := http.NewServeMux()
+	root.HandleFunc(config.Server.WebhookEndpoint, handleWebhook)
+	if config.Server.AdminEndpoint != "" {
+		adminMux := http.NewServeMux()
+		adminMux.HandleFunc("/create", createMirror)
+		root.Handle(config.Server.AdminEndpoint, adminMux)
+	}
+
+	if err := http.ListenAndServe(config.Server.Address, root); err != nil {
 		log.Fatalln("Fatal error in HTTP server")
 		panic(err)
+	}
+}
+
+func saveConfig() {
+	if data, err := yaml.Marshal(&config); err != nil {
+		log.Errorln("Failed to marshal config:", err)
+		return
+	} else if err := ioutil.WriteFile(*configPath, data, 0600); err != nil {
+		log.Errorln("Failed to write config:", err)
 	}
 }
 
@@ -78,19 +94,18 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	bodyBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Errorfln("Failed to read body in request from %s: %v", readUserIP(r), err)
-		respondErr(w, r, github.ErrParsingPayload)
+		respondErr(w, r, github.ErrParsingPayload, http.StatusBadRequest)
 		return
-	}
-	err = r.Body.Close()
-	if err != nil {
+	} else if err = r.Body.Close(); err != nil {
 		log.Errorfln("Failed to close body reader in request from %s: %v", readUserIP(r), err)
-		respondErr(w, r, github.ErrParsingPayload)
+		respondErr(w, r, github.ErrParsingPayload, http.StatusBadRequest)
+		return
 	}
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	rawEvt, err := hook.Parse(r, github.PushEvent, github.PingEvent)
 	if err != nil {
-		respondErr(w, r, err)
+		respondErr(w, r, err, http.StatusBadRequest)
 		return
 	}
 
@@ -98,20 +113,20 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	switch evt := rawEvt.(type) {
 	case github.PingPayload:
-		if repo, err := checkSig(r, evt.Repository.FullName); err != nil {
-			respondErr(w, r, err)
+		if repo, err, code := checkSig(r, evt.Repository.FullName); err != nil {
+			respondErr(w, r, err, code)
 		} else {
 			repo.Log.Infoln("Received webhook ping from", readUserIP(r))
 		}
 	case github.PushPayload:
-		if repo, err := checkSig(r, evt.Repository.FullName); err != nil {
-			respondErr(w, r, err)
+		if repo, err, code := checkSig(r, evt.Repository.FullName); err != nil {
+			respondErr(w, r, err, code)
 		} else {
 			w.WriteHeader(handlePushEvent(repo, evt))
 		}
 	case github.ReleasePayload:
-		if repo, err := checkSig(r, evt.Repository.FullName); err != nil {
-			respondErr(w, r, err)
+		if repo, err, code := checkSig(r, evt.Repository.FullName); err != nil {
+			respondErr(w, r, err, code)
 		} else {
 			w.WriteHeader(handleReleaseEvent(repo, evt))
 		}

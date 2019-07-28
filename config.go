@@ -29,8 +29,12 @@ type Config struct {
 	Server struct {
 		// Endpoint for admin API (e.g. dynamically adding webhooks).
 		AdminEndpoint string `yaml:"admin_endpoint"`
+		// Secret for accessing admin API.
+		AdminSecret string `yaml:"admin_secret"`
 		// Endpoint for receiving webhooks.
 		WebhookEndpoint string `yaml:"webhook_endpoint"`
+		// Public URL where the webhook endpoint is accessible. Used for installing GitHub webhooks automatically.
+		WebhookPublicURL string `yaml:"webhook_public_url"`
 
 		// Whether or not to trust X-Forwarded-For headers for logging.
 		TrustForwardHeaders bool `yaml:"trust_forward_headers"`
@@ -84,15 +88,15 @@ func (script *Script) MarshalYAML() (interface{}, error) {
 
 type Repository struct {
 	// Repository source URL. Optional, defaults to https.
-	Source string `yaml:"source"`
+	Source string `yaml:"source",json:"source"`
 	// Webhook auth secret. Request signature is not checked if secret is not configured.
-	Secret string `yaml:"secret"`
+	Secret string `yaml:"secret",json:"secret"`
 	// Target repo URL. Required.
-	Target string `yaml:"target"`
+	Target string `yaml:"target",json:"target"`
 	// Path to SSH key for pushing repo.
-	PushKey string `yaml:"push_key"`
+	PushKey string `yaml:"push_key",json:"push_key"`
 	// Path to SSH key for pulling repo. If set, source repo URL defaults to ssh instead of https.
-	PullKey string `yaml:"pull_key"`
+	PullKey string `yaml:"pull_key",json:"pull_key"`
 
 	Name string           `yaml:"-"`
 	Log  maulogger.Logger `yaml:"-"`

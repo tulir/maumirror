@@ -68,12 +68,12 @@ func handlePushEvent(repo *Repository, evt github.PushPayload) int {
 	cmd := exec.Command(config.Shell.Command, config.Shell.Args...)
 	cmd.Dir = config.DataDir
 	cmd.Env = append(cmd.Env,
-		"MM_SOURCE_URL="+evt.Repository.GitURL,
 		"MM_REPOSITORY_NAME="+evt.Repository.Name,
 		"MM_REPOSITORY_OWNER="+evt.Repository.Owner.Login,
+		"MM_SOURCE_URL="+evt.Repository.GitURL,
 		"MM_SOURCE_URL_OVERRIDE="+repo.Source,
-
 		"MM_SOURCE_KEY_PATH="+repo.PullKey,
+
 		"MM_TARGET_URL="+repo.Target,
 		"MM_TARGET_KEY_PATH="+repo.PushKey)
 	cmd.Stderr = repo.Log.WithDefaultLevel(log.LevelError)
