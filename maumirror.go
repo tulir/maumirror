@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -61,10 +62,7 @@ func main() {
 	root := http.NewServeMux()
 	root.HandleFunc(config.Server.WebhookEndpoint, handleWebhook)
 	if config.Server.AdminEndpoint != "" {
-		adminMux := http.NewServeMux()
-		adminMux.HandleFunc("/create", createMirror)
-		root.Handle(config.Server.AdminEndpoint, http.StripPrefix(config.Server.AdminEndpoint, adminMux))
-		log.Infoln("Admin listener enabled at", config.Server.AdminEndpoint)
+		root.HandleFunc(fmt.Sprintf("%s/create", config.Server.AdminEndpoint), createMirror)
 	}
 
 	log.Infoln("Listening at", config.Server.Address)
