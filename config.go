@@ -88,16 +88,16 @@ func (script *Script) MarshalYAML() (interface{}, error) {
 
 type Repository struct {
 	// Repository source URL. Optional, defaults to https.
-	Source string `yaml:"source,omitempty",json:"source"`
+	Source string `yaml:"source,omitempty" json:"source"`
 	// Webhook auth secret. Request signature is not checked if secret is not configured.
-	Secret string `yaml:"secret,omitempty",json:"secret"`
+	Secret string `yaml:"secret,omitempty" json:"secret"`
 	// Target repo URL. Required.
-	Target string `yaml:"target",json:"target"`
+	Target string `yaml:"target" json:"target"`
 	// Path to SSH key for pushing repo.
-	PushKey string `yaml:"push_key,omitempty",json:"push_key"`
+	PushKey string `yaml:"push_key,omitempty" json:"push_key"`
 	// Path to SSH key for pulling repo. If set, source repo URL defaults to ssh instead of https.
-	PullKey string `yaml:"pull_key,omitempty",json:"pull_key"`
+	PullKey string `yaml:"pull_key,omitempty" json:"pull_key"`
 
-	Name string           `yaml:"-"`
-	Log  maulogger.Logger `yaml:"-"`
+	Name string           `yaml:"-" json:"-"`
+	Log  maulogger.Logger `yaml:"-" json:"-"`
 }
