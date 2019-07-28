@@ -42,13 +42,13 @@ if [[ ! -z "$MM_SOURCE_URL_OVERRIDE" ]]; then
 fi
 if [[ ! -d $MM_REPOSITORY_NAME.git ]]; then
 	echo "Cloning $SOURCE_URL to $(pwd)/$MM_REPOSITORY_NAME.git"
-	git clone --mirror $SOURCE_URL $MM_REPOSITORY_NAME.git
+	git clone --quiet --mirror $SOURCE_URL $MM_REPOSITORY_NAME.git
 	cd $MM_REPOSITORY_NAME.git
 	git remote set-url --push origin $MM_TARGET_URL
 else
 	cd $MM_REPOSITORY_NAME.git
 	echo "Fetching $(git remote get-url origin)"
-	git fetch -p origin
+	git fetch --quiet -p origin
 fi
 if [[ ! -z "$MM_TARGET_KEY_PATH" ]]; then
 	export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -i $MM_TARGET_KEY_PATH"
@@ -56,7 +56,7 @@ else
 	unset GIT_SSH_COMMAND
 fi
 echo "Pushing to $(git remote get-url --push origin)"
-git push --mirror
+git push --quiet --mirror
 echo "Mirroring complete"
 exit 0
 `
