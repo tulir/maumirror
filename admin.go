@@ -34,12 +34,11 @@ var (
 )
 
 type CreateMirrorRequest struct {
-	Name    string     `json:"name"`
-	Repo    Repository `json:"repo"`
-	PushKey string     `json:"push_key"`
-	PullKey string     `json:"pull_key"`
-
-	GitHubToken string `json:"github_token"`
+	Name        string     `json:"name"`
+	Repo        Repository `json:"repo"`
+	PushKey     string     `json:"push_key"`
+	PullKey     string     `json:"pull_key"`
+	GitHubToken string     `json:"github_token"`
 }
 
 func writeKey(key, path, name string) (string, error) {
@@ -51,7 +50,7 @@ func writeKey(key, path, name string) (string, error) {
 		_ = os.MkdirAll(filepath.Dir(path), 0700)
 		err := ioutil.WriteFile(path, []byte(key), 0600)
 		if err != nil {
-			log.Warnln("Failed to write SSH key for", name, "to", path + ":", err)
+			log.Warnfln("Failed to write SSH key for %s to %s: %v", name, path, err)
 			return path, err
 		}
 		log.Infoln("Wrote SSH key for", name, "to", path)
