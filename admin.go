@@ -77,29 +77,31 @@ func createMirror(w http.ResponseWriter, r *http.Request) {
 	} else if err = json.Unmarshal(data, &req); err != nil {
 		respondErr(w, r, err, http.StatusBadRequest)
 		return
-	} else if req.Repo.PushKey, err = writeKey(req.PushKey, req.Repo.PushKey, req.Name); err != nil {
-		respondErr(w, r, err, http.StatusInternalServerError)
-		return
-	} else if req.Repo.PullKey, err = writeKey(req.PullKey, req.Repo.PullKey, req.Name); err != nil {
-		respondErr(w, r, err, http.StatusInternalServerError)
-		return
 	}
-
-	log.Debugln("Create mirror request from %s: %s to %s", readUserIP(r), req.Name, req.Repo.Target)
 
 	repo := &req.Repo
 	repo.Name = req.Name
 	repo.Log = log.Sub(repo.Name)
-	log.Infoln("Adding", repo.Name, "with push target", repo.Target, "to repos")
-	config.Repositories[req.Name] = repo
 
+	log.Debugln("Create mirror request from %s: %s to %s", readUserIP(r), repo.Name, repo.Target)
+
+	log.Infoln("Adding", repo.Name, "with push target", repo.Target, "to repos")
+	config.Repositories[repo.Name] = repo
+
+	var err error
 	if req.GitHubToken != "" {
-		var err error
-		repo.Secret, err = CreateWebhook(req.GitHubToken, req.Name, repo.Secret)
+		repo.Secret, err = CreateWebhook(req.GitHubToken, repo.Name, repo.Secret)
 		if err != nil {
 			respondErr(w, r, err, http.StatusInternalServerError)
 			return
 		}
+	}
+	if repo.PushKey, err = writeKey(req.PushKey, repo.PushKey, repo.Name); err != nil {
+		respondErr(w, r, err, http.StatusInternalServerError)
+		return
+	} else if repo.PullKey, err = writeKey(req.PullKey, repo.PullKey, repo.Name); err != nil {
+		respondErr(w, r, err, http.StatusInternalServerError)
+		return
 	}
 
 	log.Debugln("Saving config...")
