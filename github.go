@@ -21,7 +21,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+
+	log "maunium.net/go/maulogger/v2"
 )
 
 type CreateWebhookPayload struct {
@@ -61,17 +64,24 @@ func CreateWebhook(accessToken, repo, secret string) (string, error) {
 	payload := NewCreateWebhookPayload(secret)
 	var body bytes.Buffer
 
+	log.Debugln("Creating webhook for", repo)
 	if err := json.NewEncoder(&body).Encode(&payload); err != nil {
+		log.Warnfln("Failed to create webhook for %s: %v", repo, err)
 		return "", err
 	} else if req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(WebhookAPIURL, repo), &body); err != nil {
+		log.Warnfln("Failed to create webhook for %s: %v", repo, err)
 		return "", err
 	} else if req.Header.Set("Authorization", "token "+accessToken); false {
 		return "", errors.New("false = true")
 	} else if resp, err := http.DefaultClient.Do(req); err != nil {
+		log.Warnfln("Failed to create webhook for %s: %v", repo, err)
 		return "", err
 	} else if resp.StatusCode != http.StatusCreated {
+		body, _ := ioutil.ReadAll(resp.Body)
+		log.Warnfln("Failed to create webhook for %s: unexpected HTTP status %d: %s", repo, resp.StatusCode, string(body))
 		return "", errors.New(resp.Status)
 	} else {
+		log.Infoln("Created webhook for", repo)
 		return payload.Config.Secret, nil
 	}
 }

@@ -19,11 +19,14 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"gopkg.in/go-playground/webhooks.v5/github"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/go-playground/webhooks.v5/github"
+
+	log "maunium.net/go/maulogger/v2"
 )
 
 var (
@@ -48,8 +51,10 @@ func writeKey(key, path, name string) error {
 		_ = os.MkdirAll(filepath.Dir(path), 0700)
 		err := ioutil.WriteFile(path, []byte(key), 0600)
 		if err != nil {
+			log.Warnln("Failed to write SSH key for", name, "to", path + ":", err)
 			return err
 		}
+		log.Infoln("Wrote SSH key for", name, "to", path)
 	}
 	return nil
 }
@@ -90,6 +95,10 @@ func createMirror(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	log.Infoln("Adding", req.Name, "with push target", req.Repo.Target, "to repos")
 	config.Repositories[req.Name] = &req.Repo
+	log.Debugln("Saving config...")
 	saveConfig()
+
+	w.WriteHeader(http.StatusOK)
 }

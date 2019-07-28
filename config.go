@@ -28,16 +28,16 @@ type Config struct {
 	// HTTP server configuration.
 	Server struct {
 		// Endpoint for admin API (e.g. dynamically adding webhooks).
-		AdminEndpoint string `yaml:"admin_endpoint"`
+		AdminEndpoint string `yaml:"admin_endpoint,omitempty"`
 		// Secret for accessing admin API.
-		AdminSecret string `yaml:"admin_secret"`
+		AdminSecret string `yaml:"admin_secret,omitempty"`
 		// Endpoint for receiving webhooks.
 		WebhookEndpoint string `yaml:"webhook_endpoint"`
 		// Public URL where the webhook endpoint is accessible. Used for installing GitHub webhooks automatically.
-		WebhookPublicURL string `yaml:"webhook_public_url"`
+		WebhookPublicURL string `yaml:"webhook_public_url,omitempty"`
 
 		// Whether or not to trust X-Forwarded-For headers for logging.
-		TrustForwardHeaders bool `yaml:"trust_forward_headers"`
+		TrustForwardHeaders bool `yaml:"trust_forward_headers,omitempty"`
 		// IP and port where the server listens
 		Address string `yaml:"address"`
 	} `yaml:"server"`
@@ -50,8 +50,8 @@ type Config struct {
 		Args []string `yaml:"args"`
 		// Paths to scripts. If unset, will default to built-in handlers.
 		Scripts struct {
-			Push Script `yaml:"push"`
-		} `yaml:"scripts"`
+			Push Script `yaml:"push,omitempty"`
+		} `yaml:"scripts,omitempty"`
 	} `yaml:"shell"`
 
 	// Repository configuration
