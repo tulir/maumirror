@@ -85,6 +85,8 @@ func createMirror(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Debugln("Create mirror request from %s: %v", readUserIP(r), req)
+
 	if req.GitHubToken != "" {
 		var err error
 		req.Repo.Secret, err = CreateWebhook(req.GitHubToken, req.Name, req.Repo.Secret)
