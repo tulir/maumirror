@@ -71,33 +71,38 @@ func createMirror(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req CreateMirrorRequest
+	repo := &req.Repo
+	repo.Name = req.Name
+	repo.Log = log.Sub(repo.Name)
+
 	if data, err := ioutil.ReadAll(r.Body); err != nil {
 		respondErr(w, r, github.ErrParsingPayload, http.StatusBadRequest)
 		return
 	} else if err = json.Unmarshal(data, &req); err != nil {
 		respondErr(w, r, err, http.StatusBadRequest)
 		return
-	} else if req.Repo.PushKey, err = writeKey(req.PushKey, req.Repo.PushKey, req.Name); err != nil {
+	} else if repo.PushKey, err = writeKey(req.PushKey, repo.PushKey, req.Name); err != nil {
 		respondErr(w, r, err, http.StatusInternalServerError)
 		return
-	} else if req.Repo.PullKey, err = writeKey(req.PullKey, req.Repo.PullKey, req.Name); err != nil {
+	} else if repo.PullKey, err = writeKey(req.PullKey, repo.PullKey, req.Name); err != nil {
 		respondErr(w, r, err, http.StatusInternalServerError)
 		return
 	}
 
-	log.Debugln("Create mirror request from %s: %s to %s", readUserIP(r), req.Name, req.Repo.Target)
+	log.Debugln("Create mirror request from %s: %s to %s", readUserIP(r), req.Name, repo.Target)
+
+	log.Infoln("Adding", req.Name, "with push target", repo.Target, "to repos")
+	config.Repositories[req.Name] = repo
 
 	if req.GitHubToken != "" {
 		var err error
-		req.Repo.Secret, err = CreateWebhook(req.GitHubToken, req.Name, req.Repo.Secret)
+		repo.Secret, err = CreateWebhook(req.GitHubToken, req.Name, repo.Secret)
 		if err != nil {
 			respondErr(w, r, err, http.StatusInternalServerError)
 			return
 		}
 	}
 
-	log.Infoln("Adding", req.Name, "with push target", req.Repo.Target, "to repos")
-	config.Repositories[req.Name] = &req.Repo
 	log.Debugln("Saving config...")
 	saveConfig()
 
