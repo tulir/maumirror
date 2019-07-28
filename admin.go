@@ -42,7 +42,7 @@ type CreateMirrorRequest struct {
 	GitHubToken string `json:"github_token"`
 }
 
-func writeKey(key, path, name string) error {
+func writeKey(key, path, name string) (string, error) {
 	if key != "" {
 		if path == "" {
 			home, _ := os.UserHomeDir()
@@ -52,11 +52,11 @@ func writeKey(key, path, name string) error {
 		err := ioutil.WriteFile(path, []byte(key), 0600)
 		if err != nil {
 			log.Warnln("Failed to write SSH key for", name, "to", path + ":", err)
-			return err
+			return path, err
 		}
 		log.Infoln("Wrote SSH key for", name, "to", path)
 	}
-	return nil
+	return path, nil
 }
 
 func createMirror(w http.ResponseWriter, r *http.Request) {
@@ -77,11 +77,10 @@ func createMirror(w http.ResponseWriter, r *http.Request) {
 	} else if err = json.Unmarshal(data, &req); err != nil {
 		respondErr(w, r, err, http.StatusBadRequest)
 		return
-	}
-	if err := writeKey(req.PushKey, req.Repo.PushKey, req.Name); err != nil {
+	} else if req.Repo.PushKey, err = writeKey(req.PushKey, req.Repo.PushKey, req.Name); err != nil {
 		respondErr(w, r, err, http.StatusInternalServerError)
 		return
-	} else if err := writeKey(req.PullKey, req.Repo.PullKey, req.Name); err != nil {
+	} else if req.Repo.PullKey, err = writeKey(req.PullKey, req.Repo.PullKey, req.Name); err != nil {
 		respondErr(w, r, err, http.StatusInternalServerError)
 		return
 	}
