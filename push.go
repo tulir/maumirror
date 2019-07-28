@@ -47,7 +47,6 @@ if [[ ! -d $MM_REPOSITORY_NAME.git ]]; then
 	git remote set-url --push origin $MM_TARGET_URL
 else
 	cd $MM_REPOSITORY_NAME.git
-	echo "Fetching $(git remote get-url origin)"
 	git fetch --quiet -p origin
 fi
 if [[ ! -z "$MM_TARGET_KEY_PATH" ]]; then
@@ -55,9 +54,8 @@ if [[ ! -z "$MM_TARGET_KEY_PATH" ]]; then
 else
 	unset GIT_SSH_COMMAND
 fi
-echo "Pushing to $(git remote get-url --push origin)"
 git push --quiet --mirror
-echo "Mirroring complete"
+echo "Mirroring from $(git remote get-url origin) to $(git remote get-url --push origin) complete"
 exit 0
 `
 
