@@ -33,9 +33,9 @@ fi
 cd $MM_REPOSITORY_OWNER
 if [[ ! -z "$MM_SOURCE_KEY_PATH" ]]; then
 	export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -i $MM_SOURCE_KEY_PATH"
-	SOURCE_URL="git@github.com:$MM_REPOSITORY_OWNER/$MM_REPOSITORY_NAME.git"
+	SOURCE_URL="$MM_SOURCE_URL_SSH"
 else
-	SOURCE_URL="https://github.com/$MM_REPOSITORY_OWNER/$MM_REPOSITORY_NAME.git"
+	SOURCE_URL="$MM_SOURCE_URL_HTTP"
 fi
 if [[ ! -z "$MM_SOURCE_URL_OVERRIDE" ]]; then
 	SOURCE_URL="$MM_SOURCE_URL_OVERRIDE"
@@ -60,8 +60,8 @@ exit 0
 `
 
 func handlePushEvent(repo *Repository, evt github.PushPayload) int {
-	lock.Lock(evt.Repository.FullName)
-	defer lock.Unlock(evt.Repository.FullName)
+	repo.Lock()
+	defer repo.Unlock()
 
 	cmd := exec.Command(config.Shell.Command, config.Shell.Args...)
 	cmd.Dir = config.DataDir
@@ -69,6 +69,8 @@ func handlePushEvent(repo *Repository, evt github.PushPayload) int {
 		"MM_REPOSITORY_NAME="+evt.Repository.Name,
 		"MM_REPOSITORY_OWNER="+evt.Repository.Owner.Login,
 		"MM_SOURCE_URL="+evt.Repository.GitURL,
+		"MM_SOURCE_URL_HTTP="+evt.Repository.CloneURL,
+		"MM_SOURCE_URL_SSH="+evt.Repository.SSHURL,
 		"MM_SOURCE_URL_OVERRIDE="+repo.Source,
 		"MM_SOURCE_KEY_PATH="+repo.PullKey,
 

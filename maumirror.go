@@ -19,6 +19,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"gopkg.in/go-playground/webhooks.v5/gitlab"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -37,7 +38,8 @@ var wantHelp, _ = mauflag.MakeHelpFlag()
 
 var config Config
 var lock = NewPartitionLocker(&sync.Mutex{})
-var hook, _ = github.New()
+var githubHook, _ = github.New()
+var gitlabHook, _ = gitlab.New()
 
 func main() {
 	if err := mauflag.Parse(); err != nil {
@@ -103,7 +105,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 
-	rawEvt, err := hook.Parse(r, github.PushEvent, github.PingEvent)
+	rawEvt, err := githubHook.Parse(r, github.PushEvent, github.PingEvent)
 	if err != nil {
 		respondErr(w, r, err, http.StatusBadRequest)
 		return
