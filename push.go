@@ -74,8 +74,8 @@ func handlePushEvent(repo *Repository, evt github.PushPayload) int {
 
 		"MM_TARGET_URL="+repo.Target,
 		"MM_TARGET_KEY_PATH="+repo.PushKey)
-	cmd.Stderr = repo.Log.WithDefaultLevel(log.LevelError)
-	cmd.Stdout = repo.Log.WithDefaultLevel(log.LevelInfo)
+	cmd.Stderr = repo.Log.Writer(log.LevelError)
+	cmd.Stdout = repo.Log.Writer(log.LevelInfo)
 
 	script := pushScript
 	if config.Shell.Scripts.Push != nil && len(config.Shell.Scripts.Push.Data) > 0 {
