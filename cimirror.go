@@ -177,7 +177,7 @@ func handleJobEvent(repo *CIRepository, evt gitlab.JobEventPayload) {
 		opts.StartedAt = &github.Timestamp{Time: evt.BuildStartedAt.Time}
 		opts.CompletedAt = &github.Timestamp{Time: evt.BuildFinishedAt.Time}
 		opts.Output.Title = stringPtr("Job successful")
-		opts.Output.Summary = stringPtr("This job is completed successfully.")
+		opts.Output.Summary = stringPtr("This job completed successfully.")
 	case "canceled":
 		opts.Status = &statusCompleted
 		opts.Conclusion = &conclusionCancelled
