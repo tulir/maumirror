@@ -1,5 +1,5 @@
 // maumirror - A GitHub repo mirroring system using webhooks.
-// Copyright (C) 2019 Tulir Asokan
+// Copyright (C) 2021 Tulir Asokan
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -17,15 +17,12 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"runtime/debug"
 	"sync"
 
-	"gopkg.in/go-playground/webhooks.v5/github"
+	"github.com/go-playground/webhooks/v6/github"
 	"gopkg.in/yaml.v2"
 
 	"maunium.net/go/mauflag"
@@ -33,11 +30,12 @@ import (
 )
 
 var configPath = mauflag.MakeFull("c", "config", "Path to config file", "config.yaml").String()
+var debugLogs = mauflag.MakeFull("d", "debug", "Print debug logs to stdout", "false").Bool()
 var wantHelp, _ = mauflag.MakeHelpFlag()
 
 var config Config
 var lock = NewPartitionLocker(&sync.Mutex{})
-var hook, _ = github.New()
+var ghHook, _ = github.New()
 
 func main() {
 	if err := mauflag.Parse(); err != nil {
@@ -46,12 +44,15 @@ func main() {
 	} else if *wantHelp {
 		mauflag.PrintHelp()
 		os.Exit(0)
-	} else if configData, err := ioutil.ReadFile(*configPath); err != nil {
+	} else if configData, err := os.ReadFile(*configPath); err != nil {
 		log.Fatalln("Failed to read config:", err)
 		os.Exit(10)
 	} else if err := yaml.Unmarshal(configData, &config); err != nil {
 		log.Fatalln("Failed to parse config:", err)
 		os.Exit(11)
+	}
+	if *debugLogs {
+		log.DefaultLogger.PrintLevel = log.LevelDebug.Severity
 	}
 
 	for name, repo := range config.Repositories {
@@ -59,9 +60,21 @@ func main() {
 		repo.Log = log.Sub(name)
 	}
 
+	for _, repo := range config.CIRepositories {
+		repo.checkSuiteIDs = make(map[string]int64)
+		repo.checkRunIDs = make(map[int64]int64)
+		repo.plock = NewPartitionLocker(&sync.Mutex{})
+	}
+
 	root := http.NewServeMux()
 	root.HandleFunc(config.Server.WebhookEndpoint, handleWebhook)
-	if config.Server.AdminEndpoint != "" {
+	if len(config.GitHubApp.PrivateKey) > 0 && len(config.Server.CIWebhookEndpoint) > 0 {
+		log.Debugfln("Initializing GitHub app client")
+		initGHClient()
+		root.HandleFunc(config.Server.CIWebhookEndpoint, handleCIWebhook)
+	}
+	if len(config.Server.AdminEndpoint) > 0 {
+		log.Debugfln("Admin API is enabled")
 		root.HandleFunc(fmt.Sprintf("%s/create", config.Server.AdminEndpoint), createMirror)
 	}
 
@@ -76,59 +89,7 @@ func saveConfig() {
 	if data, err := yaml.Marshal(&config); err != nil {
 		log.Errorln("Failed to marshal config:", err)
 		return
-	} else if err := ioutil.WriteFile(*configPath, data, 0600); err != nil {
+	} else if err := os.WriteFile(*configPath, data, 0600); err != nil {
 		log.Errorln("Failed to write config:", err)
-	}
-}
-
-func handleWebhook(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		err := recover()
-		if err != nil {
-			log.Errorln("Handling request from", readUserIP(r), "panicked:", err)
-			debug.PrintStack()
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}()
-
-	bodyBytes, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Errorfln("Failed to read body in request from %s: %v", readUserIP(r), err)
-		respondErr(w, r, github.ErrParsingPayload, http.StatusBadRequest)
-		return
-	} else if err = r.Body.Close(); err != nil {
-		log.Errorfln("Failed to close body reader in request from %s: %v", readUserIP(r), err)
-		respondErr(w, r, github.ErrParsingPayload, http.StatusBadRequest)
-		return
-	}
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-
-	rawEvt, err := hook.Parse(r, github.PushEvent, github.PingEvent)
-	if err != nil {
-		respondErr(w, r, err, http.StatusBadRequest)
-		return
-	}
-
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-
-	switch evt := rawEvt.(type) {
-	case github.PingPayload:
-		if repo, err, code := checkSig(r, evt.Repository.FullName); err != nil {
-			respondErr(w, r, err, code)
-		} else {
-			repo.Log.Infoln("Received webhook ping from", readUserIP(r))
-		}
-	case github.PushPayload:
-		if repo, err, code := checkSig(r, evt.Repository.FullName); err != nil {
-			respondErr(w, r, err, code)
-		} else {
-			w.WriteHeader(handlePushEvent(repo, evt))
-		}
-	case github.ReleasePayload:
-		if repo, err, code := checkSig(r, evt.Repository.FullName); err != nil {
-			respondErr(w, r, err, code)
-		} else {
-			w.WriteHeader(handleReleaseEvent(repo, evt))
-		}
 	}
 }

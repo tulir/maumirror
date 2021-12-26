@@ -5,14 +5,27 @@ datadir: ./data
 server:
     # Endpoint for admin API (e.g. dynamically adding webhooks).
     admin_endpoint: /admin
+    # Secret for accessing admin API. Admin API is not enabled if this is not set.
+    admin_secret: null
     # Endpoint for receiving webhooks.
     webhook_endpoint: /webhook
     # Public URL where the webhook endpoint is accessible. Used for installing GitHub webhooks automatically.
     webhook_public_url: https://example.com/webhook
+    # Endpoint for receiving CI status from GitLab.
+    ci_webhook_endpoint: /ci/webhook
+    # Public URL where the CI webhook endpoint is accessible. Used for installing GitLab webhooks automatically.
+    ci_webhook_public_url: https://example.com/ci/webhook
     # Whether or not to trust X-Forwarded-For headers for logging.
     trust_forward_headers: true
     # IP and port where the server listens
     address: :29321
+
+# GitHub app credentials for mirroring CI status from GitLab back to GitHub using the Checks API.
+github_app:
+    # The numeric app ID.
+    id: null
+    # RSA private key for the app
+    private_key: null
 
 # Shell configuration
 shell:
@@ -38,3 +51,15 @@ repositories:
         push_key: ~/.ssh/gitlab_ed25519
         # Path to SSH key for pulling from repo. If set, source repo URL defaults to ssh instead of https.
         #pull_key: ~/.ssh/github_ed25519
+
+# Reverse repository configuration for mirroring CI status back to GitHub.
+ci_repositories:
+    # The key is the GitLab project ID
+    1234:
+        # Target GitHub repo owner and name
+        owner: githubtraining
+        repo: hellogitworld
+        # Webhook auth secret.
+        secret: foobar
+        # GitHub app installation ID. This will be filled automatically if left empty.
+        installation_id: 0

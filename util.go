@@ -1,5 +1,5 @@
 // maumirror - A GitHub repo mirroring system using webhooks.
-// Copyright (C) 2019 Tulir Asokan
+// Copyright (C) 2021 Tulir Asokan
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -21,13 +21,30 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 
-	"gopkg.in/go-playground/webhooks.v5/github"
+	"github.com/go-playground/webhooks/v6/github"
+	"github.com/go-playground/webhooks/v6/gitlab"
 
 	log "maunium.net/go/maulogger/v2"
 )
+
+func checkGLToken(r *http.Request, projectID int64) (repo *CIRepository, err error, code int) {
+	repo, ok := config.CIRepositories[projectID]
+	if !ok {
+		code = http.StatusNotFound
+		err = errors.New("unknown repository")
+		return
+	}
+	token := r.Header.Get("X-Gitlab-Token")
+	if token != repo.Secret {
+		code = http.StatusUnauthorized
+		err = gitlab.ErrGitLabTokenVerificationFailed
+		return
+	}
+	return repo, nil, http.StatusOK
+}
 
 func checkSig(r *http.Request, repoName string) (repo *Repository, err error, code int) {
 	signature := r.Header.Get("X-Hub-Signature")
@@ -44,7 +61,7 @@ func checkSig(r *http.Request, repoName string) (repo *Repository, err error, co
 	}
 	mac := hmac.New(sha1.New, []byte(repo.Secret))
 
-	payload, err := ioutil.ReadAll(r.Body)
+	payload, err := io.ReadAll(r.Body)
 	if err != nil || len(payload) == 0 {
 		code = http.StatusBadRequest
 		err = github.ErrParsingPayload
@@ -61,7 +78,6 @@ func checkSig(r *http.Request, repoName string) (repo *Repository, err error, co
 	code = http.StatusOK
 	return
 }
-
 
 func readUserIP(r *http.Request) string {
 	var ip string

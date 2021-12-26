@@ -5,7 +5,7 @@ if [[ ! -d $MM_REPOSITORY_OWNER ]]; then
 fi
 cd $MM_REPOSITORY_OWNER
 if [[ ! -z "$MM_SOURCE_KEY_PATH" ]]; then
-	export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -i $MM_SOURCE_KEY_PATH"
+	export GIT_SSH_COMMAND="ssh -F /dev/null -o StrictHostKeyChecking=no -i $MM_SOURCE_KEY_PATH"
 	SOURCE_URL="git@github.com:$MM_REPOSITORY_OWNER/$MM_REPOSITORY_NAME.git"
 else
 	SOURCE_URL="https://github.com/$MM_REPOSITORY_OWNER/$MM_REPOSITORY_NAME.git"
@@ -23,7 +23,7 @@ else
 	git fetch --quiet -p origin
 fi
 if [[ ! -z "$MM_TARGET_KEY_PATH" ]]; then
-	export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -i $MM_TARGET_KEY_PATH"
+	export GIT_SSH_COMMAND="ssh -F /dev/null -o StrictHostKeyChecking=no -i $MM_TARGET_KEY_PATH"
 else
 	unset GIT_SSH_COMMAND
 fi

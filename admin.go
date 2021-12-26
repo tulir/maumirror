@@ -1,5 +1,5 @@
 // maumirror - A GitHub repo mirroring system using webhooks.
-// Copyright (C) 2019 Tulir Asokan
+// Copyright (C) 2021 Tulir Asokan
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -19,12 +19,15 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 
-	"gopkg.in/go-playground/webhooks.v5/github"
+	"github.com/go-playground/webhooks/v6/github"
 
 	log "maunium.net/go/maulogger/v2"
 )
@@ -40,6 +43,10 @@ type CreateMirrorRequest struct {
 	PullKey string     `json:"pull_key"`
 
 	GitHubToken string `json:"github_token"`
+
+	GitLabProjectID int64  `json:"gitlab_project_id"`
+	GitLabToken     string `json:"gitlab_token"`
+	GitLabURL       string `json:"gitlab_url"`
 }
 
 func writeKey(key, path, name string) (string, error) {
@@ -49,9 +56,9 @@ func writeKey(key, path, name string) (string, error) {
 			path = filepath.Join(home, ".ssh", "push", name)
 		}
 		_ = os.MkdirAll(filepath.Dir(path), 0700)
-		err := ioutil.WriteFile(path, []byte(key), 0600)
+		err := os.WriteFile(path, []byte(key), 0600)
 		if err != nil {
-			log.Warnln("Failed to write SSH key for", name, "to", path + ":", err)
+			log.Warnfln("Failed to write SSH key for %s to %s: %v", name, path, err)
 			return path, err
 		}
 		log.Infoln("Wrote SSH key for", name, "to", path)
@@ -71,7 +78,7 @@ func createMirror(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req CreateMirrorRequest
-	if data, err := ioutil.ReadAll(r.Body); err != nil {
+	if data, err := io.ReadAll(r.Body); err != nil {
 		respondErr(w, r, github.ErrParsingPayload, http.StatusBadRequest)
 		return
 	} else if err = json.Unmarshal(data, &req); err != nil {
@@ -90,7 +97,7 @@ func createMirror(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	if req.GitHubToken != "" {
-		repo.Secret, err = CreateWebhook(req.GitHubToken, repo.Name, repo.Secret)
+		repo.Secret, err = CreateGitHubWebhook(req.GitHubToken, repo.Name, repo.Secret)
 		if err != nil {
 			respondErr(w, r, err, http.StatusInternalServerError)
 			return
@@ -102,6 +109,35 @@ func createMirror(w http.ResponseWriter, r *http.Request) {
 	} else if repo.PullKey, err = writeKey(req.PullKey, repo.PullKey, repo.Name); err != nil {
 		respondErr(w, r, err, http.StatusInternalServerError)
 		return
+	}
+
+	if appGHClient != nil && req.GitLabProjectID != 0 && req.GitLabToken != "" && req.GitLabURL != "" {
+		parts := strings.Split(repo.Name, "/")
+		ciRepo := &CIRepository{
+			Secret:        RandString(50),
+			Owner:         parts[0],
+			Name:          parts[1],
+			plock:         NewPartitionLocker(&sync.Mutex{}),
+			checkSuiteIDs: make(map[string]int64),
+			checkRunIDs:   make(map[int64]int64),
+		}
+		installation, _, err := appGHClient.Apps.FindRepositoryInstallation(r.Context(), ciRepo.Owner, ciRepo.Name)
+		if err != nil {
+			respondErr(w, r, fmt.Errorf("failed to find GitHub app installation ID: %w", err), http.StatusInternalServerError)
+			return
+		}
+		log.Debugfln("Found installation ID for %s/%s: %d", ciRepo.Owner, ciRepo.Name, installation.GetID())
+		ciRepo.InstallationID = installation.GetID()
+
+		log.Debugln("Creating CI webhook for", req.GitLabProjectID)
+		err = CreateGitLabWebhook(req.GitLabURL, req.GitLabToken, req.GitLabProjectID, ciRepo.Secret)
+		if err != nil {
+			respondErr(w, r, fmt.Errorf("failed to create CI webhook: %w", err), http.StatusInternalServerError)
+			return
+		}
+		log.Infofln("Successfully created CI webhook for %d to mirror status to %s/%s", req.GitLabProjectID, ciRepo.Owner, ciRepo.Name)
+
+		config.CIRepositories[req.GitLabProjectID] = ciRepo
 	}
 
 	log.Debugln("Saving config...")
